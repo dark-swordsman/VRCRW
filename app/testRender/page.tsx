@@ -1,7 +1,8 @@
 "use client";
 
-import { Stage, Sprite, Container, useTick, useApp } from "@pixi/react";
-import { useState, useEffect, useRef} from "react";
+import { Stage, Sprite, Container, Text, useTick, useApp } from "@pixi/react";
+import { TextStyle } from "pixi.js";
+import { useState, useEffect, useRef } from "react";
 
 function CustomContainer({ size, grabOffset, zoom }) {
     const numberOfHands = 10;
@@ -15,12 +16,12 @@ function CustomContainer({ size, grabOffset, zoom }) {
     
     useTick((delta) => {
         setDeltaTime(deltaTime + delta);
-        setTestArray(testArray.map((_, i) => createHand(i, Math.sin(((deltaTime) / 50)) * 5)));
+        setTestArray(testArray.map((_, i) => createHand(i, Math.sin((deltaTime) / 50) * 5)));
     });
 
     return (
         <Container position={[(size.w / 2) + grabOffset.x, (size.w / 4) + grabOffset.y]} scale={10 / zoom}>
-            {testArray.map((a, i) => <Sprite key={i} x={a.x} y={a.y} image="https://cdn.discordapp.com/emojis/794514415772631060.gif?size=48&name=clap2&quality=lossless" />)}
+            {testArray.map((a, i) => <Sprite key={i} x={a.x} y={a.y} anchor={0.5} rotation={Math.sin(deltaTime / 50) * 15} image="https://cdn.discordapp.com/emojis/794514415772631060.gif?size=48&name=clap2&quality=lossless" />)}
         </Container>    
     );
 }
@@ -77,9 +78,15 @@ export default function TestRender() {
     }
 
     return (
-        <div ref={stageRef} onMouseDown={(e) => handleGrab(e, true)} onMouseUp={(e) => handleGrab(e, false)} onWheelCapture={(e) => handleScroll(e)}>
+        <div ref={stageRef} 
+            onMouseDown={(e) => handleGrab(e, true)} 
+            onMouseUp={(e) => handleGrab(e, false)} 
+            onWheelCapture={(e) => handleScroll(e)} 
+            onMouseLeave={(e) => handleGrab(e, false)}
+        >
             <Stage className={"!w-full !h-full " + (isGrabbing ? "cursor-grabbing" : "cursor-grab") } width={size.w} height={size.w / 2}>
                 <CustomContainer size={size} grabOffset={grabOffset} zoom={zoom} />
+                <Text x={8} y={5} text={`X: ${grabOffset.x}\nY: ${grabOffset.y}`} style={ new TextStyle({ fill: ["#888"], fontSize: 18 })}/>
             </Stage>
         </div>
     );

@@ -1,7 +1,10 @@
 import { ResourceList } from "../../components";
+import { ResourceInterface } from "interfaces";
 
-export default function Resources() {
+export default async function Resources() {
+    const resources = await ResourceInterface.getAll();
+
     return (
-        <ResourceList />
+        <ResourceList resources={resources}/>
     );
 }

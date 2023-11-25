@@ -21,7 +21,12 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "interfaces": ["./interfaces"],
+      "helpers": ["./helpers"],
+      "components": ["./components"],
+    }
   },
   "include": [
     "next-env.d.ts",

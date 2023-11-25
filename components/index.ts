@@ -1,7 +1,12 @@
 import {
+    NodeGraph
+} from "./NodeGraph";
+import {
     ResourceList
 } from "./ResourceList";
 
+
 export {
-    ResourceList
+    NodeGraph,
+    ResourceList,
 }

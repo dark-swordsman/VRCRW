@@ -60,7 +60,7 @@ export default function TestRender() {
         if (isGrabbing) updateGrabOffest();
     }, [isGrabbing, mousePosition]);
 
-    function handleGrab(event, toGrab:boolean) {
+    function handleGrab(event, toGrab: boolean) {
         if ((toGrab && event.buttons == 1) || !toGrab) {
             setIsGrabbing(toGrab);
             setLastMousePosition({ x: event.clientX, y: event.clientY });
@@ -71,7 +71,7 @@ export default function TestRender() {
         setGrabOffset({ x: mousePosition.x - lastMousePosition.x + grabOffset.x, y: mousePosition.y - lastMousePosition.y + grabOffset.y });
     }
 
-    function handleScroll(event) {
+    function handleScroll(event: React.WheelEvent<Element>) {
         // check mouse offset from edges, and also change offset to zoom around mouse position
         console.log(event.deltaY);
         setZoom(Math.max(4, Math.min(20, zoom + (event.deltaY/40))));
@@ -84,7 +84,7 @@ export default function TestRender() {
             onWheelCapture={(e) => handleScroll(e)} 
             onMouseLeave={(e) => handleGrab(e, false)}
         >
-            <Stage className={"!w-full !h-full " + (isGrabbing ? "cursor-grabbing" : "cursor-grab") } width={size.w} height={size.w / 2}>
+            <Stage className={"!w-full !h-full " + (isGrabbing ? "!cursor-grabbing" : "!cursor-grab") } width={size.w} height={size.w / 2}>
                 <CustomContainer size={size} grabOffset={grabOffset} zoom={zoom} />
                 <Text x={8} y={5} text={`X: ${grabOffset.x}\nY: ${grabOffset.y}`} style={ new TextStyle({ fill: ["#888"], fontSize: 18 })}/>
             </Stage>

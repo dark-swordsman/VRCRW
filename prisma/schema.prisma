@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Resource {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  link    String
+  tags    String
+  image   String?
+}
+
+model GraphNode {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  resourceId  String @db.ObjectId
+  coords      Coordinates
+}
+
+model GraphRelation {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  fromId  String @db.ObjectId
+  toId    String @db.ObjectId
+  type    RelationType 
+}
+
+
+type Coordinates {
+  x Int
+  y Int
+}
+
+enum RelationType {
+  SOLID
+  DASHED
+}

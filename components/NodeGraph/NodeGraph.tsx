@@ -1,15 +1,18 @@
 "use client";
 
-import { Container, Graphics, Stage, Text } from "@pixi/react";
+import { Container, Graphics, Stage, Text, useTick } from "@pixi/react";
 import { GraphNode, GraphRelation, Resource } from "@prisma/client";
 import { TextStyle } from "pixi.js";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 
 import FunnyHands from "./FunnyHands";
 import CustomContainer from "./CustomContainer";
 import { Node, Relation } from "./GraphicsObjects";
 import GraphicsRenderer from "./GraphicsRenderer";
 import GraphRelationInterface from "../../interfaces/GraphRelationInterface";
+
+export const NodeGraphContext = createContext(null);
+export const NodeGraphContextPartTwo = createContext(null);
 
 export default function NodeGraph({ data }: { data: { graphNodes: GraphNode[], graphRelations: GraphRelation[], resources: Resource[] }}) {
     // get width and height
@@ -18,8 +21,10 @@ export default function NodeGraph({ data }: { data: { graphNodes: GraphNode[], g
     const [grabOffset, setGrabOffset] = useState({x: 0, y: 0});
     const [lastMousePosition, setLastMousePosition] = useState({x: 0, y: 0});
     const [mousePosition, setMousePosition] = useState({x: 0, y: 0});
-    const [zoom, setZoom] = useState(10);
+    const [zoom, setZoom] = useState(1);
+    const [lerpZoom, setLerpZoom] = useState(1);
     const [isGrabbing, setIsGrabbing] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
     const [serializedGraphicsData, setSerializedGraphicsData] = useState([]);
     const [didMount, setDidMount] = useState(false);
     
@@ -85,7 +90,8 @@ export default function NodeGraph({ data }: { data: { graphNodes: GraphNode[], g
 
     function updateMousePos(event) {
         setLastMousePosition(mousePosition);
-        setMousePosition({ x: event.clientX, y: event.clientY });
+            const rect = event.target.getBoundingClientRect();
+            setMousePosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
     }
 
     useEffect(() => {
@@ -99,7 +105,8 @@ export default function NodeGraph({ data }: { data: { graphNodes: GraphNode[], g
     function handleGrab(event, toGrab: boolean) {
         if ((toGrab && event.buttons == 1) || !toGrab) {
             setIsGrabbing(toGrab);
-            setLastMousePosition({ x: event.clientX, y: event.clientY });
+            const rect = event.target.getBoundingClientRect();
+            setLastMousePosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
         }
     }
 
@@ -110,42 +117,97 @@ export default function NodeGraph({ data }: { data: { graphNodes: GraphNode[], g
     function handleScroll(event: React.WheelEvent<Element>) {
         // check mouse offset from edges, and also change offset to zoom around mouse position
         console.log(event.deltaY);
-        setZoom(Math.max(4, Math.min(20, zoom + (event.deltaY/40))));
+        setZoom(Math.max(0.4, Math.min(2, zoom - (event.deltaY/400))));
+    }
+
+    function getCursorType({ isHovering, isGrabbing }) {
+        if (isHovering) return "!cursor-pointer";
+        if (isGrabbing) return "!cursor-grabbing";
+
+        return "!cursor-grab";
     }
 
     // data for draws
 
     const cma = {
         x: () => {
-            return mousePosition.x - stageRef.current.offsetLeft - size.w / 2;
+            return mousePosition.x - (size.w / 2);
         },
         y: () => {
-            return mousePosition.y - stageRef.current.offsetTop - size.w / 4;
+            return mousePosition.y - (size.w / 4);
         }
     }
 
 
     return (
         <div ref={stageRef} 
-            onMouseDown={(e) => handleGrab(e, true)} 
-            onMouseUp={(e) => handleGrab(e, false)} 
-            onWheelCapture={(e) => handleScroll(e)} 
-            onMouseLeave={(e) => handleGrab(e, false)}
-        >
-            {didMount && 
-                <Stage className={"!w-full !h-full " + (isGrabbing ? "!cursor-grabbing" : "!cursor-grab") } width={size.w} height={size.w / 2}>
-                    <Container interactive={true} position={[(size.w / 2) + grabOffset.x, (size.w / 4) + grabOffset.y]} scale={10 / zoom}>
-                        <GraphicsRenderer serializedGraphicsData={serializedGraphicsData} windowData={{
-                            mousePosition: { x: cma.x(), y: cma.y() },
-                            grabOffset: grabOffset
-                        }} />
-                        {/* <FunnyHands /> */}
-                    </Container>  
-                    <Text x={8} y={5} text={`X: ${grabOffset.x}\nY: ${grabOffset.y}`} style={ new TextStyle({ fill: ["#888"], fontSize: 18 })}/>
-                    <Text x={8} y={65} text={`mouse\nX: ${cma.x()}\nY: ${cma.y()}`} style={ new TextStyle({ fill: ["#888"], fontSize: 16 })}/>
-                    <Text x={8} y={130} text={`zoom: ${1 / (zoom / 10)}`} style={ new TextStyle({ fill: ["#888"], fontSize: 16 })}/>
-                </Stage>
-            }
-        </div>
+                onMouseDown={(e) => handleGrab(e, true)} 
+                onMouseUp={(e) => handleGrab(e, false)}
+                onWheelCapture={(e) => handleScroll(e)} 
+                onMouseLeave={(e) => handleGrab(e, false)}
+            >
+                {didMount && 
+                    <Stage className={"!w-full !h-full " + (getCursorType({ isHovering, isGrabbing })) } width={size.w} height={size.w / 2}>
+                        <NodeGraphContextPartTwo.Provider value={{ setLerpZoom, lerpZoom, zoom }}>
+                            <FunnyUseTickBullshit>
+                                <Container eventMode="auto" position={[(size.w / 2) + grabOffset.x, (size.w / 4) + grabOffset.y]} scale={lerpZoom}>
+                                    <NodeGraphContext.Provider value={{ setIsHovering, isHovering }}>
+                                        <GraphicsRenderer serializedGraphicsData={serializedGraphicsData} windowData={{
+                                            mousePosition: { x: cma.x(), y: cma.y() },
+                                            grabOffset,
+                                            zoom: lerpZoom,
+                                        }} />
+                                        {/* <FunnyHands /> */}
+                                    </NodeGraphContext.Provider>
+                                </Container>  
+                            </FunnyUseTickBullshit>
+                        </NodeGraphContextPartTwo.Provider>
+                        <Text x={8} y={5} text={`X: ${grabOffset.x}\nY: ${grabOffset.y}`} style={ new TextStyle({ fill: ["#888"], fontSize: 18 })}/>
+                        <Text x={8} y={65} text={`mouse\nX: ${cma.x()}\nY: ${cma.y()}`} style={ new TextStyle({ fill: ["#888"], fontSize: 16 })}/>
+                        <Text x={8} y={130} text={`zoom: ${zoom}`} style={ new TextStyle({ fill: ["#888"], fontSize: 16 })}/>
+                    </Stage>
+                }
+            </div>
     );
+}
+
+function FunnyUseTickBullshit({ children }) {
+    const [lerpZoomDiff, setLerpZoomDiff] = useState(0);
+    const [progress, setProgress] = useState(0);
+    const [useLerpZoom, setUseLerpZoom] = useState(false);
+
+    const {
+        setLerpZoom,
+        lerpZoom,
+        zoom
+    } = useContext(NodeGraphContextPartTwo);
+
+
+    useEffect(() => {
+        setProgress(0);
+        setLerpZoomDiff(zoom - lerpZoom);
+        setUseLerpZoom(true);
+    }, [zoom]);
+
+    useTick(() => {
+        if (useLerpZoom) doLerpZoom(3);
+    });
+
+    function easeInOutCubic(x: number): number {
+        return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    }
+
+    function easeOutSine(x: number): number {
+        return Math.sin((x * Math.PI) / 2);
+      
+      }
+
+    function doLerpZoom(speed: number) {
+        if (progress >= 1) setUseLerpZoom(false);
+        setLerpZoom(zoom - (lerpZoomDiff * (1 - easeOutSine(progress))));
+        setProgress(progress + (1 / (60 / speed)));
+    }
+
+
+    return children;
 }

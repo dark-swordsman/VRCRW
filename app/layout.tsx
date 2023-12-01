@@ -11,9 +11,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-bgcolor text-txtcolor">
-        <div className="container mx-auto">
+    <html lang="en" className="h-full">
+      <body className="flex flex-col bg-bgcolor text-txtcolor flex-1 h-full">
+        <div className="flex flex-col container mx-auto flex-1">
           <div className="mt-10 mb-6 h-12 bg-slate-800">
             header
           </div>
